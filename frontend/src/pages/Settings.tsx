@@ -1,0 +1,18 @@
+import { useState, type FormEvent } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { Bell, Check, Copy, KeyRound, Mail, ShieldCheck, UserRound } from 'lucide-react'
+import { api, json } from '../api'
+import { useAuth } from '../context'
+import { ErrorBox, PageHeading } from '../components/Shared'
+import type { User } from '../types'
+
+export default function Settings() {
+  const {user,setUser}=useAuth()
+  const [name,setName]=useState(user?.name ?? '')
+  const [alertEmail,setAlertEmail]=useState(user?.alert_email ?? '')
+  const [saved,setSaved]=useState(false)
+  const save=useMutation({mutationFn:()=>api<User>('/settings',json('PATCH',{name,alert_email:alertEmail||null})),onSuccess:u=>{setUser(u);setSaved(true);setTimeout(()=>setSaved(false),3500)}})
+  function submit(e:FormEvent){e.preventDefault();save.mutate()}
+  return <><PageHeading eyebrow="WORKSPACE" title="Settings" description="Manage your profile and notification preferences."/><div className="settings-grid"><section className="panel settings-panel"><div className="settings-section-heading"><span className="settings-section-icon"><UserRound size={19}/></span><div><h2>Profile information</h2><p>Personal details for your workspace</p></div></div><form onSubmit={submit} className="settings-form"><label>Display name<input required minLength={2} maxLength={120} value={name} onChange={e=>setName(e.target.value)}/></label><label>Account email<input value={user?.email ?? ''} disabled/><small>Account email cannot be changed in this starter version.</small></label><div className="divider-line"/><div className="settings-section-heading"><span className="settings-section-icon"><Bell size={19}/></span><div><h2>Alert preferences</h2><p>Choose where alerts should be delivered</p></div></div><label>Alert email (optional)<input type="email" value={alertEmail} onChange={e=>setAlertEmail(e.target.value)} placeholder="alerts@company.com"/><small>Requires the SMTP variables in the backend .env file. In-app alerts always work.</small></label>{save.error&&<ErrorBox message={save.error.message}/>}<div className="settings-actions">{saved&&<span className="save-confirm"><Check size={16}/> Saved successfully</span>}<button className="btn btn-primary" type="submit" disabled={save.isPending}>{save.isPending?'Saving...':'Save settings'}</button></div></form></section>
+    <div className="settings-side"><section className="panel info-panel"><span className="settings-section-icon"><Mail size={20}/></span><h3>Email delivery setup</h3><p>To enable email alerts, configure <code>SMTP_HOST</code>, <code>SMTP_FROM</code>, and optional credentials in <code>backend/.env</code>.</p><span className="info-tag">Optional integration</span></section><section className="panel info-panel"><span className="settings-section-icon"><ShieldCheck size={20}/></span><h3>Endpoint security</h3><p>PulseOps blocks localhost, private networks, and nonstandard ports to reduce server-side request risks. For production, enforce egress network policies too.</p><span className="info-tag">Public URL monitoring only</span></section><section className="panel info-panel"><span className="settings-section-icon"><KeyRound size={20}/></span><h3>API reference</h3><p>Use Swagger UI to explore all authenticated FastAPI endpoints and response schemas.</p><a href="http://127.0.0.1:8000/docs" target="_blank" rel="noreferrer">Open Swagger docs</a></section><section className="panel info-panel"><button className="copy-slug" onClick={()=>navigator.clipboard.writeText(user?.public_slug ?? '')}><Copy size={16}/> Copy public page ID</button></section></div></div></>
+}

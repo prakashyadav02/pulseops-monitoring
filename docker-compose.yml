@@ -1,0 +1,23 @@
+services:
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: sqlite:////data/pulseops.db
+      SECRET_KEY: change-this-secret-before-sharing-the-app
+      SEED_DEMO: 'true'
+      ENABLE_SCHEDULER: 'true'
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - '8000:8000'
+    volumes:
+      - pulseops_data:/data
+  web:
+    build: ./frontend
+    environment:
+      VITE_PROXY_TARGET: http://api:8000
+    ports:
+      - '5173:5173'
+    depends_on:
+      - api
+volumes:
+  pulseops_data:
